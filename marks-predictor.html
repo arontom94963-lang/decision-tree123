@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Student Marks Prediction — Decision Tree Regressor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1220;
+    --bg-2:#121729;
+    --paper:#faf6ec;
+    --paper-2:#f2ece0;
+    --paper-ink:#211c14;
+    --paper-ink-dim:#6b6353;
+    --ink:#e8eaf3;
+    --ink-dim:#9aa3bf;
+    --rule:#262d47;
+    --accent:#e8ab1d;
+    --accent-ink:#2a1d02;
+    --teal:#37c9ae;
+    --rose:#f0708a;
+    --code-rule:#e2dac6;
+    --radius:3px;
+  }
+  [data-theme="light"]{
+    --bg:#f4f1e9; --bg-2:#eee8d9; --ink:#211c14; --ink-dim:#5c5646; --rule:#ddd4bc;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--accent); color:var(--accent-ink); }
+
+  h1,h2,h3,h4{ font-family:'Source Serif 4', Georgia, serif; font-weight:600; margin:0 0 .4em; letter-spacing:-0.01em; }
+  code, .mono, .cell-code, table{ font-family:'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace; }
+
+  a{ color:var(--teal); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:0 20px; }
+
+  /* progress bar */
+  #progress{ position:fixed; top:0; left:0; height:3px; width:0%; background:linear-gradient(90deg,var(--accent),var(--teal)); z-index:200; transition:width .1s linear; }
+
+  header.hero{
+    padding:88px 0 56px;
+    background:
+      radial-gradient(circle at 15% 20%, rgba(232,171,29,.10), transparent 45%),
+      radial-gradient(circle at 85% 0%, rgba(55,201,174,.10), transparent 40%);
+    border-bottom:1px solid var(--rule);
+  }
+  .eyebrow-row{ display:flex; gap:10px; align-items:center; margin-bottom:22px; flex-wrap:wrap; }
+  .kicker{ font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-dim); }
+  .pill{ font-family:'IBM Plex Mono'; font-size:12px; padding:3px 9px; border:1px solid var(--rule); border-radius:20px; color:var(--ink-dim); }
+  header.hero h1{ font-size:clamp(30px,5vw,46px); line-height:1.08; max-width:14ch; }
+  header.hero p.lede{ max-width:56ch; color:var(--ink-dim); font-size:17px; margin-top:14px; }
+  .hero-actions{ margin-top:30px; display:flex; gap:12px; flex-wrap:wrap; }
+
+  button{ font:inherit; cursor:pointer; }
+  .btn{
+    font-family:'IBM Plex Mono'; font-size:13px; padding:9px 16px; border-radius:var(--radius);
+    border:1px solid var(--rule); background:transparent; color:var(--ink);
+    transition:border-color .15s ease, transform .1s ease, background .15s ease;
+  }
+  .btn:hover{ border-color:var(--accent); }
+  .btn:active{ transform:translateY(1px); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:var(--accent); font-weight:600; }
+  .btn.primary:hover{ filter:brightness(1.07); }
+  .btn.small{ padding:6px 11px; font-size:12px; }
+  .btn:disabled{ opacity:.45; cursor:default; }
+  .btn:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible{ outline:2px solid var(--teal); outline-offset:2px; }
+
+  section{ padding:56px 0; border-bottom:1px solid var(--rule); }
+  section.tight{ padding:40px 0; }
+  .section-head{ margin-bottom:26px; }
+  .section-head .num{ font-family:'IBM Plex Mono'; color:var(--accent); font-size:13px; }
+  .section-head h2{ font-size:26px; margin-top:4px; }
+  .section-head p{ color:var(--ink-dim); max-width:58ch; margin-top:8px; font-size:15px; }
+
+  /* ---- notebook cell ---- */
+  .cell{ margin:22px 0 34px; border-left:3px solid var(--rule); padding-left:20px; }
+  .cell.ran{ border-left-color:var(--accent); }
+  .cell-head{ display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .cell-tag{ font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-dim); }
+  .cell-title{ font-family:'Inter'; font-weight:600; font-size:14.5px; color:var(--ink); }
+  .cell-status{ font-family:'IBM Plex Mono'; font-size:11.5px; color:var(--ink-dim); margin-left:auto; }
+  .cell-status.ok{ color:var(--teal); }
+
+  .cell-code{
+    background:var(--paper); color:var(--paper-ink);
+    border-radius:var(--radius); padding:14px 16px;
+    font-size:13px; overflow-x:auto; white-space:pre;
+    border:1px solid var(--code-rule);
+  }
+  .cell-code .c1{ color:#8a8265; } /* comments */
+  .cell-code .kw{ color:#9a5b00; }
+  .cell-code .fn{ color:#1c6e60; }
+  .cell-code .str{ color:#7a4a9e; }
+
+  .cell-out{
+    margin-top:12px; max-height:0; overflow:hidden; opacity:0;
+    transition:max-height .45s ease, opacity .3s ease, margin-top .3s ease;
+  }
+  .cell.ran .cell-out{ max-height:2400px; opacity:1; }
+
+  .out-panel{
+    background:var(--paper-2); color:var(--paper-ink); border:1px solid var(--code-rule);
+    border-radius:var(--radius); padding:16px 18px; font-size:13.5px;
+  }
+  .out-panel + .out-panel{ margin-top:10px; }
+  .out-panel h4{ font-family:'IBM Plex Mono'; font-size:12px; text-transform:none; color:var(--paper-ink-dim); margin-bottom:8px; font-weight:600; }
+  .explain{ margin-top:10px; font-size:13.5px; color:var(--ink-dim); border-left:2px solid var(--rule); padding-left:14px; }
+  .explain b{ color:var(--ink); }
+
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table caption{ text-align:left; }
+  th,td{ border-bottom:1px solid var(--code-rule); padding:6px 9px; text-align:right; white-space:nowrap; }
+  th:first-child, td:first-child{ text-align:left; }
+  thead th{ color:var(--paper-ink-dim); font-weight:600; }
+  .tbl-scroll{ overflow-x:auto; }
+  tr.na td{ color:var(--rose); }
+
+  .stat-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:4px; }
+  .stat{ background:var(--paper); border:1px solid var(--code-rule); border-radius:var(--radius); padding:10px 14px; min-width:118px; }
+  .stat .v{ font-family:'IBM Plex Mono'; font-size:19px; font-weight:600; }
+  .stat .l{ font-size:11.5px; color:var(--paper-ink-dim); margin-top:2px; }
+
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .chip{ font-family:'IBM Plex Mono'; font-size:12px; background:var(--paper); border:1px solid var(--code-rule); border-radius:20px; padding:4px 11px; }
+  .chip.drop{ text-decoration:line-through; color:var(--rose); border-color:var(--rose); }
+  .chip.target{ border-color:var(--teal); color:#0d6e5c; font-weight:600; }
+
+  .split-btns{ display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .split-btn{ font-family:'IBM Plex Mono'; font-size:12.5px; padding:8px 12px; border-radius:var(--radius); border:1px solid var(--rule); background:transparent; color:var(--ink); }
+  .split-btn.active{ border-color:var(--accent); color:var(--accent); }
+
+  svg text{ font-family:'IBM Plex Mono'; }
+
+  .predict-form{ display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; margin-top:6px; }
+  @media(max-width:560px){ .predict-form{ grid-template-columns:1fr; } }
+  .field label{ display:block; font-size:12.5px; color:var(--ink-dim); margin-bottom:6px; font-family:'IBM Plex Mono'; }
+  .field .val{ color:var(--accent); }
+  input[type=range]{ width:100%; accent-color:var(--accent); }
+  select{
+    width:100%; padding:9px 10px; background:var(--bg-2); color:var(--ink);
+    border:1px solid var(--rule); border-radius:var(--radius); font-family:'Inter'; font-size:13.5px;
+  }
+  .predict-result{
+    margin-top:24px; padding:22px; border-radius:var(--radius);
+    background:linear-gradient(135deg, rgba(232,171,29,.12), rgba(55,201,174,.08));
+    border:1px solid var(--rule);
+  }
+  .predict-result .big{ font-family:'Source Serif 4'; font-size:44px; font-weight:600; }
+  .predict-result .cap{ font-family:'IBM Plex Mono'; font-size:12.5px; color:var(--ink-dim); }
+  .path-list{ margin-top:14px; padding-left:0; list-style:none; }
+  .path-list li{ font-family:'IBM Plex Mono'; font-size:12.5px; padding:6px 0 6px 20px; border-left:2px solid var(--rule); position:relative; color:var(--ink-dim); }
+  .path-list li::before{ content:'→'; position:absolute; left:-1px; top:6px; color:var(--accent); background:var(--bg); padding-right:4px; }
+  .path-list li b{ color:var(--ink); }
+  .path-list li.leaf{ color:var(--teal); border-left-color:var(--teal); }
+
+  .about-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:10px; }
+  @media(max-width:620px){ .about-grid{ grid-template-columns:1fr; } }
+  .qa{ border-left:2px solid var(--rule); padding-left:16px; }
+  .qa h4{ font-size:15px; margin-bottom:6px; }
+  .qa p{ color:var(--ink-dim); font-size:14px; margin:0; }
+
+  footer{ padding:56px 0 70px; }
+  .signoff{ display:flex; gap:18px; align-items:flex-start; flex-wrap:wrap; }
+  .signoff .mark{
+    width:46px; height:46px; border-radius:50%; background:var(--accent); color:var(--accent-ink);
+    display:flex; align-items:center; justify-content:center; font-family:'Source Serif 4'; font-weight:700; font-size:19px; flex:none;
+  }
+  .signoff .note{ max-width:58ch; color:var(--ink-dim); font-size:14.5px; }
+  .signoff .note b{ color:var(--ink); }
+  .support-row{ margin-top:22px; display:flex; gap:10px; flex-wrap:wrap; }
+  footer .fine{ margin-top:34px; color:var(--ink-dim); font-size:12.5px; font-family:'IBM Plex Mono'; }
+
+  @media (prefers-reduced-motion: reduce){
+    html{ scroll-behavior:auto; }
+    .cell-out, #progress{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow-row">
+      <span class="kicker">Interactive ML Notebook</span>
+      <span class="pill">Decision Tree Regressor</span>
+      <span class="pill">Dataset: student_marks.csv</span>
+    </div>
+    <h1>Predicting student marks with a decision tree</h1>
+    <p class="lede">A step-by-step walk from a messy CSV to a trained regressor: cleaning the data, encoding it, growing a tree, checking its accuracy, and finally letting you plug in your own student and get a prediction.</p>
+    <div class="hero-actions">
+      <button class="btn primary" id="runAllBtn">Run all cells</button>
+      <button class="btn" id="resetBtn">Reset</button>
+      <a class="btn" href="#predictor" style="text-decoration:none; display:inline-flex; align-items:center;">Jump to the predictor</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- SECTION: load -->
+  <section id="s-load">
+    <div class="section-head">
+      <div class="num">01</div>
+      <h2>Load the dataset</h2>
+      <p>150 students, 8 recorded columns each. A few rows arrived with blanks, exactly like a real export from a school spreadsheet.</p>
+    </div>
+
+    <div class="cell" data-cell="1">
+      <div class="cell-head">
+        <span class="cell-tag">In [1]</span>
+        <span class="cell-title">Read the CSV into a DataFrame</span>
+        <span class="cell-status">not run</span>
+        <button class="btn small run-btn">Run cell</button>
+      </div>
+      <div class="cell-code"><span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+df = pd.<span class="fn">read_csv</span>(<span class="str">"student_marks.csv"</span>)
+df.<span class="fn">head</span>(8)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>df — first 8 of 150 rows</h4>
+          <div class="tbl-scroll" id="raw-table"></div>
+        </div>
+        <div class="explain">Two of these rows are missing a value <span class="mono">(NaN)</span> — a blank <b>study_hours</b> cell and a blank <b>attendance_pct</b> cell. That's normal for real data, and we'll deal with it in Section 2 rather than pretend it isn't there.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: cleaning -->
+  <section id="s-clean">
+    <div class="section-head">
+      <div class="num">02</div>
+      <h2>Data cleaning &amp; formatting</h2>
+      <p>Before any model sees this data, we check its shape, look for missing values and duplicates, fix them, and rename the columns so nobody has to guess what <span class="mono">prev_score</span> means.</p>
+    </div>
+
+    <div class="cell" data-cell="2">
+      <div class="cell-head"><span class="cell-tag">In [2]</span><span class="cell-title">Shape and column names</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">print(df.shape)
+df.columns</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>output</h4>
+          <div class="mono" style="font-size:13px;">(150, 8)</div>
+          <div class="chips" id="col-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="3">
+      <div class="cell-head"><span class="cell-tag">In [3]</span><span class="cell-title">Check dtypes and null counts</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df.<span class="fn">info</span>()
+df.<span class="fn">isnull</span>().<span class="fn">sum</span>()</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>non-null counts per column</h4>
+          <div class="tbl-scroll" id="info-table"></div>
+        </div>
+        <div class="explain">Everything is numeric or a short text category — no dates, no free text to parse. Two columns show fewer than 150 non-null values, matching the blanks we spotted above.</div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="4">
+      <div class="cell-head"><span class="cell-tag">In [4]</span><span class="cell-title">Check duplicate rows</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df.<span class="fn">duplicated</span>().<span class="fn">sum</span>()</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>output</h4>
+          <div class="mono" id="dup-count" style="font-size:13px;"></div>
+        </div>
+        <div class="explain" id="dup-explain"></div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="5">
+      <div class="cell-head"><span class="cell-tag">In [5]</span><span class="cell-title">Fix missing values and drop duplicates</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df = df.<span class="fn">drop_duplicates</span>()
+
+df[<span class="str">"study_hours"</span>] = df[<span class="str">"study_hours"</span>].<span class="fn">fillna</span>(df[<span class="str">"study_hours"</span>].<span class="fn">median</span>())
+df[<span class="str">"attendance_pct"</span>] = df[<span class="str">"attendance_pct"</span>].<span class="fn">fillna</span>(df[<span class="str">"attendance_pct"</span>].<span class="fn">median</span>())
+
+df.<span class="fn">isnull</span>().<span class="fn">sum</span>().<span class="fn">sum</span>()</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>output</h4>
+          <div class="mono" style="font-size:13px;">0</div>
+        </div>
+        <div class="explain">Numeric gaps are filled with the column <b>median</b> rather than the mean, since a median doesn't get dragged around by one unusually high or low student. The duplicate rows are dropped outright — a repeated row would let the same student "vote twice" during training.</div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="6">
+      <div class="cell-head"><span class="cell-tag">In [6]</span><span class="cell-title">Rename columns for clarity</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df = df.<span class="fn">rename</span>(columns={
+    <span class="str">"study_hrs"</span>: <span class="str">"study_hours"</span>,
+    <span class="str">"prev_score"</span>: <span class="str">"previous_score"</span>,
+    <span class="str">"sleep_hrs"</span>: <span class="str">"sleep_hours"</span>,
+    <span class="str">"extra_curr"</span>: <span class="str">"extracurricular"</span>,
+    <span class="str">"parent_edu"</span>: <span class="str">"parental_education"</span>,
+})</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>rename map</h4>
+          <div class="tbl-scroll" id="rename-table"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: encode -->
+  <section id="s-encode">
+    <div class="section-head">
+      <div class="num">03</div>
+      <h2>Encode the categorical columns</h2>
+      <p>A decision tree compares numbers at every split, so <span class="mono">"Yes"</span>, <span class="mono">"No"</span> and <span class="mono">"Masters"</span> all need to become numbers first.</p>
+    </div>
+
+    <div class="cell" data-cell="7">
+      <div class="cell-head"><span class="cell-tag">In [7]</span><span class="cell-title">Map Yes/No columns, one-hot encode education</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df[<span class="str">"extracurricular"</span>] = df[<span class="str">"extracurricular"</span>].<span class="fn">map</span>({<span class="str">"Yes"</span>: 1, <span class="str">"No"</span>: 0})
+df[<span class="str">"internet_access"</span>] = df[<span class="str">"internet_access"</span>].<span class="fn">map</span>({<span class="str">"Yes"</span>: 1, <span class="str">"No"</span>: 0})
+
+df = pd.<span class="fn">get_dummies</span>(
+    df, columns=[<span class="str">"parental_education"</span>], drop_first=<span class="kw">True</span>
+)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>parental_education → dummy columns</h4>
+          <p style="margin:0 0 10px;color:var(--paper-ink-dim);font-size:13px;">Reference category: <b>High School</b> (represented as all zeros)</p>
+          <div class="tbl-scroll" id="dummy-table"></div>
+        </div>
+        <div class="explain">This creates <span class="mono">parental_education_Bachelors</span> and <span class="mono">parental_education_Masters</span>. A High School parent shows <b>0, 0</b> across both; Bachelors shows <b>1, 0</b>; Masters shows <b>0, 1</b>.</div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="8">
+      <div class="cell-head"><span class="cell-tag">In [8]</span><span class="cell-title">Preview the cleaned &amp; encoded table</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">df.<span class="fn">head</span>(6)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>df — cleaned, 11 columns</h4>
+          <div class="tbl-scroll" id="clean-table"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: split -->
+  <section id="s-split">
+    <div class="section-head">
+      <div class="num">04</div>
+      <h2>Select features, split the data</h2>
+      <p>Separate the columns the model is allowed to look at (X) from the one it has to guess (y), then hold back a slice of students it never trains on.</p>
+    </div>
+
+    <div class="cell" data-cell="9">
+      <div class="cell-head"><span class="cell-tag">In [9]</span><span class="cell-title">Build the feature matrix (X) and target (y)</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">X = df.<span class="fn">drop</span>(columns=[<span class="str">"student_id"</span>, <span class="str">"final_marks"</span>])
+y = df[<span class="str">"final_marks"</span>]</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>columns used</h4>
+          <div class="chips" id="xy-chips"></div>
+          <div class="explain" style="border:none;padding:0;margin-top:12px;"><b>student_id</b> is dropped because it's just a label, not a signal. <b>final_marks</b> is the target, so it's the one column that must never leak into X.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="10">
+      <div class="cell-head"><span class="cell-tag">In [10]</span><span class="cell-title">80 / 20 train-test split</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code"><span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+
+X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
+    X, y, test_size=0.2, random_state=42
+)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>resulting shapes</h4>
+          <div class="stat-row">
+            <div class="stat"><div class="v" id="n-train">–</div><div class="l">training rows</div></div>
+            <div class="stat"><div class="v" id="n-test">–</div><div class="l">testing rows</div></div>
+            <div class="stat"><div class="v" id="n-feat">–</div><div class="l">input features</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: train -->
+  <section id="s-train">
+    <div class="section-head">
+      <div class="num">05</div>
+      <h2>Build and fit the decision tree</h2>
+      <p>The regressor repeatedly asks the single yes/no question that most reduces the spread of marks in front of it, then asks a new question inside each half.</p>
+    </div>
+
+    <div class="cell" data-cell="11">
+      <div class="cell-head"><span class="cell-tag">In [11]</span><span class="cell-title">Train a DecisionTreeRegressor</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code"><span class="kw">from</span> sklearn.tree <span class="kw">import</span> DecisionTreeRegressor
+
+model = <span class="fn">DecisionTreeRegressor</span>(
+    criterion=<span class="str">"squared_error"</span>,
+    max_depth=4,
+    min_samples_split=5,
+    random_state=42
+)
+model.<span class="fn">fit</span>(X_train, y_train)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>output</h4>
+          <div class="mono" style="font-size:13px;">DecisionTreeRegressor(max_depth=4, min_samples_split=5, random_state=42)</div>
+        </div>
+        <div class="explain"><span class="mono">fit()</span> is the only step where the model actually learns anything. It tries splitting on every feature at every candidate threshold and keeps the one that reduces variance in <span class="mono">final_marks</span> the most — this happens for real, in your browser, on the 120 training students above, so the tree below is the actual model, not a mock-up.</div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="12">
+      <div class="cell-head"><span class="cell-tag">In [12]</span><span class="cell-title">Compare candidate root splits</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code"><span class="c1"># teaching aid — the values below are computed from the real training set</span>
+<span class="kw">for</span> feature <span class="kw">in</span> [<span class="str">"previous_score"</span>, <span class="str">"study_hours"</span>, <span class="str">"attendance_pct"</span>]:
+    best = <span class="fn">best_threshold</span>(feature, X_train, y_train)
+    <span class="fn">print</span>(feature, best)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>candidate splits — click one to preview</h4>
+          <div class="split-btns" id="split-btns"></div>
+          <div id="split-detail" style="font-size:13px;color:var(--paper-ink-dim);"></div>
+        </div>
+        <div class="explain">The model doesn't literally "try" plain-English questions — it scans numerical thresholds and measures variance reduction (<span class="mono">how much tighter the marks get in each half</span>). This panel shows that same scan for three features so the idea is visible; the actual root split the tree picked appears in the diagram below.</div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="13">
+      <div class="cell-head"><span class="cell-tag">In [13]</span><span class="cell-title">Visualize the trained tree</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code"><span class="kw">from</span> sklearn.tree <span class="kw">import</span> plot_tree
+<span class="fn">plot_tree</span>(model, feature_names=X.columns, max_depth=3, filled=<span class="kw">True</span>)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>first 3 levels of the real trained tree</h4>
+          <div id="tree-svg-holder" style="overflow-x:auto;"></div>
+        </div>
+        <div class="explain">Each box names the feature and threshold it split on, how many training students reached that box, and their average marks. The tree itself goes one level deeper (<span class="mono">max_depth=4</span>) than what's drawn here, purely to keep the diagram readable.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: evaluate -->
+  <section id="s-eval">
+    <div class="section-head">
+      <div class="num">06</div>
+      <h2>Test it, then evaluate it</h2>
+      <p>The 30 students in the test set were never used for training. Predicting their marks is the honest check of whether the tree actually learned something.</p>
+    </div>
+
+    <div class="cell" data-cell="14">
+      <div class="cell-head"><span class="cell-tag">In [14]</span><span class="cell-title">Predict on the test set</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">y_pred = model.<span class="fn">predict</span>(X_test)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>actual vs. predicted — first 10 test students</h4>
+          <div class="tbl-scroll" id="pred-table"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cell" data-cell="15">
+      <div class="cell-head"><span class="cell-tag">In [15]</span><span class="cell-title">MAE, MSE, RMSE, R²</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code"><span class="kw">from</span> sklearn.metrics <span class="kw">import</span> mean_absolute_error, mean_squared_error, r2_score
+
+mae = <span class="fn">mean_absolute_error</span>(y_test, y_pred)
+rmse = <span class="fn">mean_squared_error</span>(y_test, y_pred) ** 0.5
+r2 = <span class="fn">r2_score</span>(y_test, y_pred)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <h4>real metrics, computed from the table above</h4>
+          <div class="stat-row" id="metric-stats"></div>
+        </div>
+        <div class="explain">
+          <b>MAE</b> — average marks the prediction is off by, in either direction.<br>
+          <b>RMSE</b> — same units as MAE, but a handful of badly-missed students weigh more heavily.<br>
+          <b>R²</b> — the share of the variation in marks the model explains; 1.0 is perfect, 0 is no better than always guessing the average.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: predictor -->
+  <section id="predictor">
+    <div class="section-head">
+      <div class="num">07</div>
+      <h2>Try it yourself</h2>
+      <p>Describe a student below and the trained tree — the exact one built two sections up — will walk its branches and predict a final mark.</p>
+    </div>
+
+    <div class="cell" data-cell="16">
+      <div class="cell-head"><span class="cell-tag">In [16]</span><span class="cell-title">Predict marks for a new student</span><span class="cell-status">not run</span><button class="btn small run-btn">Run cell</button></div>
+      <div class="cell-code">new_student = pd.<span class="fn">DataFrame</span>([{ ...your inputs below... }])
+model.<span class="fn">predict</span>(new_student)</div>
+      <div class="cell-out">
+        <div class="out-panel">
+          <div class="predict-form" id="predict-form">
+            <div class="field">
+              <label>Study hours per day: <span class="val" id="lbl-study">4.0</span></label>
+              <input type="range" id="in-study" min="0.5" max="9.5" step="0.5" value="4">
+            </div>
+            <div class="field">
+              <label>Attendance: <span class="val" id="lbl-att">75%</span></label>
+              <input type="range" id="in-att" min="50" max="100" step="1" value="75">
+            </div>
+            <div class="field">
+              <label>Previous exam score: <span class="val" id="lbl-prev">65</span></label>
+              <input type="range" id="in-prev" min="30" max="100" step="1" value="65">
+            </div>
+            <div class="field">
+              <label>Sleep hours per night: <span class="val" id="lbl-sleep">7.0</span></label>
+              <input type="range" id="in-sleep" min="4" max="9" step="0.5" value="7">
+            </div>
+            <div class="field">
+              <label>Extracurricular activities</label>
+              <select id="in-extra"><option value="1">Yes</option><option value="0">No</option></select>
+            </div>
+            <div class="field">
+              <label>Internet access at home</label>
+              <select id="in-net"><option value="1" selected>Yes</option><option value="0">No</option></select>
+            </div>
+            <div class="field" style="grid-column:1/-1;">
+              <label>Parental education</label>
+              <select id="in-edu">
+                <option value="High School">High School</option>
+                <option value="Bachelors" selected>Bachelors</option>
+                <option value="Masters">Masters</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn primary" id="predictBtn" style="margin-top:18px;">Predict marks</button>
+
+          <div class="predict-result" id="predict-result" style="display:none;">
+            <div class="cap">Predicted final marks</div>
+            <div class="big"><span id="pred-value">–</span><span style="font-size:18px;color:var(--ink-dim);"> / 100</span></div>
+            <ul class="path-list" id="pred-path"></ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION: about -->
+  <section id="s-about">
+    <div class="section-head">
+      <div class="num">08</div>
+      <h2>About this notebook</h2>
+      <p>A few questions people usually ask the first time they see this page.</p>
+    </div>
+    <div class="about-grid">
+      <div class="qa">
+        <h4>Is the model really training in my browser?</h4>
+        <p>Yes. There's no server behind this page — a small decision-tree-regressor implementation runs in JavaScript, fits itself to the 120 training students, and every number on this page (splits, metrics, predictions) comes out of that run, not a hard-coded value.</p>
+      </div>
+      <div class="qa">
+        <h4>Where did the dataset come from?</h4>
+        <p>It's synthetic — generated for this notebook so it's free to use and share. Marks are built from study hours, attendance, prior performance, sleep and background, plus some randomness, which is why the tree never gets a perfect score.</p>
+      </div>
+      <div class="qa">
+        <h4>Why a decision tree instead of linear regression?</h4>
+        <p>A tree can naturally capture "study hours matter a lot below 5, barely above it" style effects without you specifying them. The trade-off is that it can overfit if left too deep — which is exactly why <span class="mono">max_depth</span> and <span class="mono">min_samples_split</span> are set here.</p>
+      </div>
+      <div class="qa">
+        <h4>Can I use this on my own class's data?</h4>
+        <p>The structure will work for any table shaped like this one: a handful of numeric and yes/no columns and a numeric target. Swap the CSV, re-run the cells in order, and the same cleaning, encoding and evaluation steps apply.</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="signoff">
+      <div class="mark">A</div>
+      <div class="note">
+        <b>A note from the person who built this.</b> I put this notebook together to make one specific idea click: a decision tree isn't a black box, it's a sequence of yes/no questions that a computer picks for itself. If a section above was confusing or something looked broken, that's useful to know — reach out.
+      </div>
+    </div>
+    <div class="support-row">
+      <a class="btn" href="mailto:hello@example.com">Email feedback</a>
+      <a class="btn" href="#s-load">Back to the top</a>
+    </div>
+    <div class="fine">Built as a teaching notebook · dataset is synthetic · not intended for real academic decisions</div>
+  </div>
+</footer>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- PRNG (deterministic) ---------------- */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(20260918);
+function gauss(){
+  let u=0,v=0; while(u===0) u=rand(); while(v===0) v=rand();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function round1(x){ return Math.round(x*10)/10; }
+
+/* ---------------- Dataset generation ---------------- */
+const N = 150;
+const EDU_LEVELS = ["High School","Bachelors","Masters"];
+const EDU_BONUS = {"High School":0, "Bachelors":2, "Masters":4};
+
+let rawRows = [];
+for(let i=0;i<N;i++){
+  const study = round1(0.5 + rand()*9);
+  const att = Math.round(50 + rand()*50);
+  const prev = Math.round(30 + rand()*70);
+  const sleep = round1(4 + rand()*5);
+  const extra = rand() < 0.5 ? "Yes" : "No";
+  const net = rand() < 0.72 ? "Yes" : "No";
+  const eduRoll = rand();
+  const edu = eduRoll < 0.35 ? "High School" : (eduRoll < 0.75 ? "Bachelors" : "Masters");
+
+  const raw =
+    20 + study*3.8 + att*0.28 + prev*0.32 + sleep*1.1 +
+    (extra==="Yes"?2:0) + (net==="Yes"?2.5:0) + EDU_BONUS[edu] + gauss()*5;
+  const marks = Math.round(clamp(raw, 0, 100));
+
+  rawRows.push({
+    student_id: "S" + String(1000+i),
+    study_hrs: study, attendance_pct: att, prev_score: prev, sleep_hrs: sleep,
+    extra_curr: extra, internet_access: net, parent_edu: edu, final_marks: marks
+  });
+}
+// introduce missing values
+rawRows[3].study_hrs = null;
+rawRows[27].attendance_pct = null;
+// introduce an exact duplicate row for the cleaning demo
+rawRows.push(Object.assign({}, rawRows[10]));
+rawRows.push(Object.assign({}, rawRows[41]));
+
+/* ---------------- Cleaning ---------------- */
+function median(arr){
+  const a = arr.slice().sort((x,y)=>x-y);
+  const m = a.length;
+  return m%2 ? a[(m-1)/2] : (a[m/2-1]+a[m/2])/2;
+}
+
+// dedupe (exact-match on every field)
+function rowKey(r){ return JSON.stringify(r); }
+const seen = new Set();
+let dupCount = 0;
+let dedup = [];
+rawRows.forEach(r=>{
+  const k = rowKey(r);
+  if(seen.has(k)){ dupCount++; return; }
+  seen.add(k); dedup.push(Object.assign({},r));
+});
+
+const studyMedian = median(dedup.filter(r=>r.study_hrs!=null).map(r=>r.study_hrs));
+const attMedian = median(dedup.filter(r=>r.attendance_pct!=null).map(r=>r.attendance_pct));
+let nullBefore = 0;
+dedup.forEach(r=>{
+  if(r.study_hrs==null){ r.study_hrs = studyMedian; nullBefore++; }
+  if(r.attendance_pct==null){ r.attendance_pct = attMedian; nullBefore++; }
+});
+
+// rename
+const clean = dedup.map(r=>({
+  student_id:r.student_id, study_hours:r.study_hrs, attendance_pct:r.attendance_pct,
+  previous_score:r.prev_score, sleep_hours:r.sleep_hrs, extracurricular:r.extra_curr,
+  internet_access:r.internet_access, parental_education:r.parent_edu, final_marks:r.final_marks
+}));
+
+// encode
+const encoded = clean.map(r=>({
+  student_id:r.student_id,
+  study_hours:r.study_hours,
+  attendance_pct:r.attendance_pct,
+  previous_score:r.previous_score,
+  sleep_hours:r.sleep_hours,
+  extracurricular: r.extracurricular==="Yes"?1:0,
+  internet_access: r.internet_access==="Yes"?1:0,
+  parental_education_Bachelors: r.parental_education==="Bachelors"?1:0,
+  parental_education_Masters: r.parental_education==="Masters"?1:0,
+  final_marks:r.final_marks
+}));
+
+const FEATURES = ["study_hours","attendance_pct","previous_score","sleep_hours","extracurricular","internet_access","parental_education_Bachelors","parental_education_Masters"];
+
+/* ---------------- train/test split ---------------- */
+function shuffle(arr, rnd){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(rnd()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+const shuffled = shuffle(encoded, mulberry32(7));
+const testSize = Math.round(shuffled.length*0.2);
+const testRows = shuffled.slice(0, testSize);
+const trainRows = shuffled.slice(testSize);
+
+/* ---------------- CART regressor ---------------- */
+function variance(rows){
+  if(rows.length===0) return 0;
+  const m = rows.reduce((s,r)=>s+r.final_marks,0)/rows.length;
+  return rows.reduce((s,r)=>s+(r.final_marks-m)*(r.final_marks-m),0)/rows.length;
+}
+function meanOf(rows){ return rows.reduce((s,r)=>s+r.final_marks,0)/rows.length; }
+
+function bestSplitForFeature(feature, rows){
+  const vals = Array.from(new Set(rows.map(r=>r[feature]))).sort((a,b)=>a-b);
+  if(vals.length<2) return null;
+  let best = null;
+  for(let i=0;i<vals.length-1;i++){
+    const thr = (vals[i]+vals[i+1])/2;
+    const left = rows.filter(r=>r[feature]<=thr);
+    const right = rows.filter(r=>r[feature]>thr);
+    if(left.length<2 || right.length<2) continue;
+    const wSSE = (left.length*variance(left) + right.length*variance(right));
+    if(!best || wSSE < best.wSSE){ best = {feature, thr, wSSE, left, right}; }
+  }
+  return best;
+}
+
+function bestSplit(rows, features){
+  let best = null;
+  features.forEach(f=>{
+    const cand = bestSplitForFeature(f, rows);
+    if(cand && (!best || cand.wSSE < best.wSSE)) best = cand;
+  });
+  return best;
+}
+
+function buildTree(rows, features, depth, maxDepth, minSplit){
+  const node = { n: rows.length, value: meanOf(rows), depth };
+  if(depth>=maxDepth || rows.length<minSplit || variance(rows)<0.001){
+    node.leaf = true;
+    return node;
+  }
+  const split = bestSplit(rows, features);
+  if(!split){ node.leaf = true; return node; }
+  node.leaf = false;
+  node.feature = split.feature;
+  node.thr = split.thr;
+  node.left = buildTree(split.left, features, depth+1, maxDepth, minSplit);
+  node.right = buildTree(split.right, features, depth+1, maxDepth, minSplit);
+  return node;
+}
+
+const TREE = buildTree(trainRows, FEATURES, 0, 4, 5);
+
+function predictRow(node, row){
+  let cur = node;
+  while(!cur.leaf){
+    cur = row[cur.feature] <= cur.thr ? cur.left : cur.right;
+  }
+  return cur.value;
+}
+function predictPath(node, row){
+  let cur = node; const path=[];
+  while(!cur.leaf){
+    const val = row[cur.feature];
+    const goLeft = val <= cur.thr;
+    path.push({feature:cur.feature, thr:cur.thr, val, goLeft});
+    cur = goLeft ? cur.left : cur.right;
+  }
+  path.push({leafValue:cur.value, n:cur.n});
+  return path;
+}
+
+/* ---------------- Predictions + metrics on test set ---------------- */
+const testPreds = testRows.map(r=>({...r, pred: predictRow(TREE, r)}));
+const mae = testPreds.reduce((s,r)=>s+Math.abs(r.final_marks-r.pred),0)/testPreds.length;
+const mse = testPreds.reduce((s,r)=>s+(r.final_marks-r.pred)*(r.final_marks-r.pred),0)/testPreds.length;
+const rmse = Math.sqrt(mse);
+const yMean = testPreds.reduce((s,r)=>s+r.final_marks,0)/testPreds.length;
+const ssTot = testPreds.reduce((s,r)=>s+(r.final_marks-yMean)*(r.final_marks-yMean),0);
+const ssRes = testPreds.reduce((s,r)=>s+(r.final_marks-r.pred)*(r.final_marks-r.pred),0);
+const r2 = 1 - (ssRes/ssTot);
+
+/* ================= RENDER ================= */
+function el(tag, cls, html){ const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; }
+function tableFrom(headers, rows, opts){
+  opts = opts || {};
+  const t = document.createElement("table");
+  const thead = el("thead"); const trh = el("tr");
+  headers.forEach(h=>trh.appendChild(el("th", null, h)));
+  thead.appendChild(trh); t.appendChild(thead);
+  const tbody = el("tbody");
+  rows.forEach((r, idx)=>{
+    const tr = el("tr");
+    if(opts.naRows && opts.naRows.has(idx)) tr.classList.add("na");
+    r.forEach(c=>tr.appendChild(el("td", null, c)));
+    tbody.appendChild(tr);
+  });
+  t.appendChild(tbody);
+  return t;
+}
+
+// 1. raw table
+(function(){
+  const host = document.getElementById("raw-table");
+  const headers = ["student_id","study_hrs","attendance_pct","prev_score","sleep_hrs","extra_curr","internet_access","parent_edu","final_marks"];
+  const sample = rawRows.slice(0,8);
+  const naRows = new Set();
+  const rows = sample.map((r,i)=>{
+    if(r.study_hrs==null || r.attendance_pct==null) naRows.add(i);
+    return headers.map(h=> r[h]==null ? "NaN" : r[h]);
+  });
+  host.appendChild(tableFrom(headers, rows, {naRows}));
+})();
+
+// 2. column chips
+(function(){
+  const host = document.getElementById("col-chips");
+  ["student_id","study_hrs","attendance_pct","prev_score","sleep_hrs","extra_curr","internet_access","parent_edu","final_marks"]
+    .forEach(c=> host.appendChild(el("span","chip",c)));
+})();
+
+// 3. info table
+(function(){
+  const host = document.getElementById("info-table");
+  const headers = ["column","non-null count","dtype"];
+  const total = rawRows.length;
+  const rows = [
+    ["student_id", total, "object"],
+    ["study_hrs", total-1, "float64"],
+    ["attendance_pct", total-1, "float64"],
+    ["prev_score", total, "int64"],
+    ["sleep_hrs", total, "float64"],
+    ["extra_curr", total, "object"],
+    ["internet_access", total, "object"],
+    ["parent_edu", total, "object"],
+    ["final_marks", total, "int64"],
+  ];
+  host.appendChild(tableFrom(headers, rows));
+})();
+
+// 4. duplicates
+(function(){
+  document.getElementById("dup-count").textContent = String(dupCount);
+  document.getElementById("dup-explain").textContent =
+    dupCount + " duplicate row(s) found — two students appear twice with identical values across every column, most likely a copy-paste error in the original export.";
+})();
+
+// 6. rename table
+(function(){
+  const host = document.getElementById("rename-table");
+  const headers = ["before","after"];
+  const rows = [
+    ["study_hrs","study_hours"],["attendance_pct","attendance_pct (unchanged)"],
+    ["prev_score","previous_score"],["sleep_hrs","sleep_hours"],
+    ["extra_curr","extracurricular"],["parent_edu","parental_education"]
+  ];
+  host.appendChild(tableFrom(headers, rows));
+})();
+
+// 7. dummy table
+(function(){
+  const host = document.getElementById("dummy-table");
+  const headers = ["parental_education","→ Bachelors","→ Masters"];
+  const rows = EDU_LEVELS.map(l=>[l, l==="Bachelors"?1:0, l==="Masters"?1:0]);
+  host.appendChild(tableFrom(headers, rows));
+})();
+
+// 8. clean table
+(function(){
+  const host = document.getElementById("clean-table");
+  const headers = Object.keys(encoded[0]);
+  const rows = encoded.slice(0,6).map(r=>headers.map(h=>r[h]));
+  host.appendChild(tableFrom(headers, rows));
+})();
+
+// 9. xy chips
+(function(){
+  const host = document.getElementById("xy-chips");
+  host.appendChild(el("span","chip drop","student_id (dropped)"));
+  FEATURES.forEach(f=> host.appendChild(el("span","chip",f)));
+  host.appendChild(el("span","chip target","final_marks → y")); 
+})();
+
+// 10. split stats
+(function(){
+  document.getElementById("n-train").textContent = trainRows.length;
+  document.getElementById("n-test").textContent = testRows.length;
+  document.getElementById("n-feat").textContent = FEATURES.length;
+})();
+
+// 12. split buttons (candidate root splits on the real training set)
+(function(){
+  const host = document.getElementById("split-btns");
+  const detail = document.getElementById("split-detail");
+  const feats = ["previous_score","study_hours","attendance_pct"];
+  const results = feats.map(f=>({f, s:bestSplitForFeature(f, trainRows)}));
+  function show(i){
+    Array.from(host.children).forEach((b,idx)=>b.classList.toggle("active", idx===i));
+    const {f,s} = results[i];
+    if(!s){ detail.textContent = "no usable split found for "+f; return; }
+    detail.innerHTML =
+      `<b>${f} ≤ ${Math.round(s.thr*10)/10}</b> — sends ${s.left.length} students left (avg marks ${Math.round(meanOf(s.left))}), ${s.right.length} right (avg marks ${Math.round(meanOf(s.right))}). Weighted variance after split: ${Math.round(s.wSSE)}`;
+  }
+  results.forEach((r,i)=>{
+    const b = el("button","split-btn", r.f.replace(/_/g," ") + (r.s? " ≤ "+ (Math.round(r.s.thr*10)/10) : ""));
+    b.addEventListener("click",()=>show(i));
+    host.appendChild(b);
+  });
+  show(0);
+})();
+
+// 13. tree SVG (first 3 levels)
+(function(){
+  const holder = document.getElementById("tree-svg-holder");
+  const depthLimit = 3;
+  const nodesByDepth = {};
+  function walk(node, x0, x1, depth){
+    if(!nodesByDepth[depth]) nodesByDepth[depth]=[];
+    const cx = (x0+x1)/2;
+    nodesByDepth[depth].push({node, cx, x0, x1});
+    if(depth<depthLimit && !node.leaf){
+      walk(node.left, x0, cx, depth+1);
+      walk(node.right, cx, x1, depth+1);
+    }
+  }
+  walk(TREE, 0, 1000, 0);
+  const rowH = 92, boxW = 168, boxH = 60;
+  const maxDepth = Math.min(depthLimit, Math.max(...Object.keys(nodesByDepth).map(Number)));
+  const svgH = (maxDepth+1)*rowH + 40;
+  let svg = `<svg viewBox="0 0 1000 ${svgH}" width="100%" style="min-width:600px;">`;
+  // edges first
+  for(let d=0; d<maxDepth; d++){
+    (nodesByDepth[d]||[]).forEach(item=>{
+      if(item.node.leaf) return;
+      const y = 30 + d*rowH + boxH/2;
+      const childrenAtD1 = (nodesByDepth[d+1]||[]).filter(c=> c.x0>=item.x0-0.5 && c.x1<=item.x1+0.5);
+      childrenAtD1.forEach((c,ci)=>{
+        const y2 = 30 + (d+1)*rowH + boxH/2;
+        const label = ci===0 ? "yes" : "no";
+        svg += `<line x1="${item.cx}" y1="${y+boxH/2}" x2="${c.cx}" y2="${y2-boxH/2}" stroke="var(--rule)" stroke-width="1.5"/>`;
+        const mx=(item.cx+c.cx)/2, my=(y+boxH/2+y2-boxH/2)/2;
+        svg += `<text x="${mx}" y="${my}" fill="var(--teal)" font-size="11" text-anchor="middle">${label}</text>`;
+      });
+    });
+  }
+  // nodes
+  for(let d=0; d<=maxDepth; d++){
+    (nodesByDepth[d]||[]).forEach(item=>{
+      const y = 30 + d*rowH;
+      const n = item.node;
+      const fill = n.leaf ? "var(--teal)" : "var(--accent)";
+      const textFill = n.leaf ? "#062b25" : "#2a1d02";
+      const label1 = n.leaf ? `avg ${Math.round(n.value)}` : `${n.feature.replace(/_/g," ")}`;
+      const label2 = n.leaf ? `n=${n.n}` : `≤ ${Math.round(n.thr*10)/10}  (n=${n.n})`;
+      svg += `<rect x="${item.cx-boxW/2}" y="${y}" width="${boxW}" height="${boxH}" rx="4" fill="${fill}" opacity="0.92"/>`;
+      svg += `<text x="${item.cx}" y="${y+24}" fill="${textFill}" font-size="11.5" text-anchor="middle" font-weight="600">${label1}</text>`;
+      svg += `<text x="${item.cx}" y="${y+42}" fill="${textFill}" font-size="11" text-anchor="middle">${label2}</text>`;
+    });
+  }
+  svg += `</svg>`;
+  holder.innerHTML = svg;
+})();
+
+// 14. prediction table
+(function(){
+  const host = document.getElementById("pred-table");
+  const headers = ["student_id","actual","predicted","error"];
+  const rows = testPreds.slice(0,10).map(r=>[
+    r.student_id, r.final_marks, Math.round(r.pred*10)/10, Math.round((r.final_marks-r.pred)*10)/10
+  ]);
+  host.appendChild(tableFrom(headers, rows));
+})();
+
+// 15. metric stats
+(function(){
+  const host = document.getElementById("metric-stats");
+  const stats = [
+    ["MAE", mae.toFixed(2)], ["MSE", mse.toFixed(1)], ["RMSE", rmse.toFixed(2)], ["R²", r2.toFixed(3)]
+  ];
+  stats.forEach(([l,v])=>{
+    const s = el("div","stat");
+    s.appendChild(el("div","v", v));
+    s.appendChild(el("div","l", l));
+    host.appendChild(s);
+  });
+})();
+
+/* ---------------- cell run/reset behaviour ---------------- */
+function runCell(cell){
+  cell.classList.add("ran");
+  const status = cell.querySelector(".cell-status");
+  status.textContent = "executed"; status.classList.add("ok");
+  const btn = cell.querySelector(".run-btn");
+  if(btn) btn.textContent = "Re-run";
+}
+function resetCell(cell){
+  cell.classList.remove("ran");
+  const status = cell.querySelector(".cell-status");
+  status.textContent = "not run"; status.classList.remove("ok");
+  const btn = cell.querySelector(".run-btn");
+  if(btn) btn.textContent = "Run cell";
+}
+document.querySelectorAll(".cell").forEach(cell=>{
+  const btn = cell.querySelector(".run-btn");
+  if(btn) btn.addEventListener("click", ()=> runCell(cell));
+});
+document.getElementById("runAllBtn").addEventListener("click", ()=>{
+  document.querySelectorAll(".cell").forEach(runCell);
+});
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  document.querySelectorAll(".cell").forEach(resetCell);
+  document.getElementById("predict-result").style.display = "none";
+});
+
+/* ---------------- interactive predictor ---------------- */
+const inStudy = document.getElementById("in-study");
+const inAtt = document.getElementById("in-att");
+const inPrev = document.getElementById("in-prev");
+const inSleep = document.getElementById("in-sleep");
+function syncLabels(){
+  document.getElementById("lbl-study").textContent = parseFloat(inStudy.value).toFixed(1);
+  document.getElementById("lbl-att").textContent = inAtt.value + "%";
+  document.getElementById("lbl-prev").textContent = inPrev.value;
+  document.getElementById("lbl-sleep").textContent = parseFloat(inSleep.value).toFixed(1);
+}
+[inStudy,inAtt,inPrev,inSleep].forEach(i=>i.addEventListener("input", syncLabels));
+syncLabels();
+
+function featureLabel(f, thr, val){
+  const names = {
+    study_hours:"Study hours", attendance_pct:"Attendance %", previous_score:"Previous score",
+    sleep_hours:"Sleep hours", extracurricular:"Extracurricular", internet_access:"Internet access",
+    parental_education_Bachelors:"Parent has Bachelors", parental_education_Masters:"Parent has Masters"
+  };
+  return `${names[f]||f} (${val}) ≤ ${Math.round(thr*10)/10}?`;
+}
+
+document.getElementById("predictBtn").addEventListener("click", ()=>{
+  const edu = document.getElementById("in-edu").value;
+  const row = {
+    study_hours: parseFloat(inStudy.value),
+    attendance_pct: parseFloat(inAtt.value),
+    previous_score: parseFloat(inPrev.value),
+    sleep_hours: parseFloat(inSleep.value),
+    extracurricular: parseInt(document.getElementById("in-extra").value,10),
+    internet_access: parseInt(document.getElementById("in-net").value,10),
+    parental_education_Bachelors: edu==="Bachelors"?1:0,
+    parental_education_Masters: edu==="Masters"?1:0,
+  };
+  const path = predictPath(TREE, row);
+  const finalPred = clamp(path[path.length-1].leafValue, 0, 100);
+
+  document.getElementById("pred-value").textContent = Math.round(finalPred);
+  const pathHost = document.getElementById("pred-path");
+  pathHost.innerHTML = "";
+  path.forEach((step,i)=>{
+    const li = el("li");
+    if(step.leafValue!=null){
+      li.classList.add("leaf");
+      li.innerHTML = `Reached a leaf built from <b>${step.n}</b> similar training students → predicted average <b>${Math.round(step.leafValue)}</b>`;
+    } else {
+      li.innerHTML = `<b>${featureLabel(step.feature, step.thr, step.val)}</b> → ${step.goLeft ? "Yes, go left" : "No, go right"}`;
+    }
+    pathHost.appendChild(li);
+  });
+  document.getElementById("predict-result").style.display = "block";
+  const cell = document.getElementById("predict-form").closest(".cell");
+  runCell(cell);
+});
+
+/* ---------------- scroll progress ---------------- */
+const progress = document.getElementById("progress");
+function updateProgress(){
+  const h = document.documentElement;
+  const scrolled = h.scrollTop;
+  const max = h.scrollHeight - h.clientHeight;
+  progress.style.width = (max>0 ? (scrolled/max*100) : 0) + "%";
+}
+document.addEventListener("scroll", updateProgress, {passive:true});
+updateProgress();
+
+})();
+</script>
+</body>
+</html>
